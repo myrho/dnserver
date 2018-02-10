@@ -15,12 +15,12 @@ from dnslib.server import DNSServer
 SERIAL_NO = int((datetime.utcnow() - datetime(1970, 1, 1)).total_seconds())
 
 handler = logging.StreamHandler()
-handler.setLevel(logging.INFO)
+handler.setLevel(logging.DEBUG)
 handler.setFormatter(logging.Formatter('%(asctime)s: %(message)s', datefmt='%H:%M:%S'))
 
 logger = logging.getLogger(__name__)
 logger.addHandler(handler)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 TYPE_LOOKUP = {
     'A': (dns.A, QTYPE.A),
@@ -77,11 +77,12 @@ class Record:
 
 
 class Resolver(ProxyResolver):
-    def __init__(self, upstream, zone_file):
+    def __init__(self, upstream, zone_file, internal_zone_file):
         super().__init__(upstream, 53, 5)
         self.records = self.load_zones(zone_file)
+        self.internal_records = self.load_zones(internal_zone_file)
 
-    def zone_lines(self):
+    def zone_lines(self, zone_file):
         current_line = ''
         for line in zone_file.open():
             if line.startswith('#'):
@@ -98,7 +99,7 @@ class Resolver(ProxyResolver):
         assert zone_file.exists(), f'zone files "{zone_file}" does not exist'
         logger.info('loading zone file "%s":', zone_file)
         zones = []
-        for line in self.zone_lines():
+        for line in self.zone_lines(zone_file):
             try:
                 rname, rtype, args_ = line.split(maxsplit=2)
 
@@ -114,10 +115,18 @@ class Resolver(ProxyResolver):
         logger.info('%d zone resource records generated from zone file', len(zones))
         return zones
 
-    def resolve(self, request, handler):
+    def resolve(self, client_ip, request, handler):
         type_name = QTYPE[request.q.qtype]
         reply = request.reply()
+
         for record in self.records:
+            if str(record.rr.rdata).strip() == client_ip.strip():
+                records = self.internal_records
+            else:
+                records = self.records
+
+
+        for record in records:
             if record.match(request.q):
                 reply.add_answer(record.rr)
 
@@ -126,7 +135,7 @@ class Resolver(ProxyResolver):
             return reply
 
         # no direct zone so look for an SOA record for a higher level zone
-        for record in self.records:
+        for record in records:
             if record.sub_match(request.q):
                 reply.add_answer(record.rr)
 
@@ -149,7 +158,8 @@ if __name__ == '__main__':
     port = int(os.getenv('PORT', 53))
     upstream = os.getenv('UPSTREAM', '8.8.8.8')
     zone_file = Path(os.getenv('ZONE_FILE', '/zones/zones.txt'))
-    resolver = Resolver(upstream, zone_file)
+    internal_zone_file = Path(os.getenv('INTERNAL_ZONE_FILE', '/zones/internal_zones.txt'))
+    resolver = Resolver(upstream, zone_file, internal_zone_file)
     udp_server = DNSServer(resolver, port=port)
     tcp_server = DNSServer(resolver, port=port, tcp=True)
 
