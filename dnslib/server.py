@@ -106,7 +106,7 @@ class BaseResolver(object):
         Note that a single instance is used by all DNSHandler instances so 
         need to consider blocking & thread safety.
     """
-    def resolve(self,client_ip, request,handler):
+    def resolve(self,request,handler,client_ip=""):
         """
             Example resolver - respond to all requests with NXDOMAIN
         """
@@ -159,7 +159,7 @@ class DNSHandler(socketserver.BaseRequestHandler):
         self.server.logger.log_request(self,request)
 
         resolver = self.server.resolver
-        reply = resolver.resolve(client_ip, request,self)
+        reply = resolver.resolve(request,self, client_ip)
         self.server.logger.log_reply(self,reply)
 
         if self.protocol == 'udp':

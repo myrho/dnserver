@@ -9,8 +9,7 @@ from textwrap import wrap
 from time import sleep
 
 from dnslib import DNSLabel, QTYPE, RR, dns
-from dnslib.proxy import ProxyResolver
-from dnslib.server import DNSServer
+from dnslib.server import DNSServer, BaseResolver
 
 SERIAL_NO = int((datetime.utcnow() - datetime(1970, 1, 1)).total_seconds())
 
@@ -76,9 +75,8 @@ class Record:
         return str(self.rr)
 
 
-class Resolver(ProxyResolver):
-    def __init__(self, upstream, zone_file, internal_zone_file):
-        super().__init__(upstream, 53, 5)
+class Resolver(BaseResolver):
+    def __init__(self, zone_file, internal_zone_file):
         self.records = self.load_zones(zone_file)
         self.internal_records = self.load_zones(internal_zone_file)
 
@@ -115,7 +113,7 @@ class Resolver(ProxyResolver):
         logger.info('%d zone resource records generated from zone file', len(zones))
         return zones
 
-    def resolve(self, client_ip, request, handler):
+    def resolve(self, request, handler, client_ip):
         type_name = QTYPE[request.q.qtype]
         reply = request.reply()
 
@@ -143,7 +141,7 @@ class Resolver(ProxyResolver):
             logger.info('found higher level SOA resource for %s[%s]', request.q.qname, type_name)
             return reply
 
-        logger.info('no local zone found, proxying %s[%s]', request.q.qname, type_name)
+        logger.info('no local zone found for %s[%s]', request.q.qname, type_name)
         return super().resolve(request, handler)
 
 
@@ -156,14 +154,13 @@ if __name__ == '__main__':
     signal.signal(signal.SIGTERM, handle_sig)
 
     port = int(os.getenv('PORT', 53))
-    upstream = os.getenv('UPSTREAM', '8.8.8.8')
     zone_file = Path(os.getenv('ZONE_FILE', '/zones/zones.txt'))
     internal_zone_file = Path(os.getenv('INTERNAL_ZONE_FILE', '/zones/internal_zones.txt'))
-    resolver = Resolver(upstream, zone_file, internal_zone_file)
+    resolver = Resolver(zone_file, internal_zone_file)
     udp_server = DNSServer(resolver, port=port)
     tcp_server = DNSServer(resolver, port=port, tcp=True)
 
-    logger.info('starting DNS server on port %d, upstream DNS server "%s"', port, upstream)
+    logger.info('starting DNS server on port %d', port)
     udp_server.start_thread()
     tcp_server.start_thread()
 
