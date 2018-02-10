@@ -3,8 +3,7 @@
 Simple DNS server written in python for use in development and testing.
 This project adds simple "split-brain" ability.
 
-The DNS serves it's own records, if none are found it proxies the request to and upstream DNS server 
-eg. google at `8.8.8.8`.
+The DNS serves it's own records, if none are found it responds with `NXDOMAIN`.
 
 You can setup records you want to serve with a custom `zones.txt` file, 
 see [example_zones.txt](example_zones.txt) for the format.
@@ -18,7 +17,7 @@ To use with docker:
 
 (See [dnserver on hub.docker.com](https://hub.docker.com/r/samuelcolvin/dnserver/))
 
-Or with a custom zone file
+Or with custom zone files
 
     docker run -p 5053:53/udp -v `pwd`/zones.txt:/zones/zones.txt -v `pwd`/internal_zones.txt:/zones/internal_zones.txt --rm dnserver
 
