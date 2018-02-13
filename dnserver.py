@@ -73,6 +73,10 @@ class Record:
         if self._rtype == QTYPE.A:
             self.rr.rdata = dns.A(ip)
 
+    def match_ip(self, ip):
+        return self._rtype == QTYPE.A and str(self.rr.rdata).strip() == ip.strip()
+
+
     def match(self, q):
         return q.qname == self._rname and (q.qtype == QTYPE.ANY or q.qtype == self._rtype)
 
@@ -126,7 +130,7 @@ class Resolver(BaseResolver):
         reply = request.reply()
 
         for record in self.records:
-            if str(record.rr.rdata).strip() == client_ip.strip():
+            if record.match_ip(client_ip):
                 records = self.internal_records
                 logger.debug("looking into internal records")
             else:
@@ -159,8 +163,8 @@ class Resolver(BaseResolver):
 
     def updateRecords(self, records, domain, ip):
         for record in records:
-            if record.rr.rname == domain:
-                logger.debug('updating %s', record.rr.rname)
+            if record._rname == domain:
+                logger.debug('updating %s', record._rname)
                 record.set_ip(ip)
                 return True
         logger.info('%s not found', domain)
