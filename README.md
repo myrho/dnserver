@@ -28,6 +28,8 @@ To run without docker (assuming you have `dnslib==0.9.7` and python 3.6 installe
 
     PORT=5053 ZONE_FILE='./example_zones.txt' INTERNAL_ZONE_FILE='./example_internal_zones.txt' ./dnserver.py
 
+## Examples
+
 This example queries the local dnserver from a LAN interface. Client's IP is `192.168.123.123`. Retrieves the non-internal record.
 
 ```shell
@@ -57,10 +59,23 @@ example.com.		300	IN	A	192.168.123.123
 
 ```
 
-Update records by `POST`ing to the Web server's port (here 5000) using this scheme: `<address:port>/<domain>/<external ip>/[internal ip]`. For example:
+Update records by `POST`ing to the Web server's port using this scheme: `<address:port>/<domain>/<external ip>/[internal ip]`. For example:
 
     curl -X POST localhost:5000/example.com/1.2.3.4/192.168.1.2
 
 Or just update the external ip:
 
     curl -X POST localhost:5000/example.com/1.2.3.4
+
+If the record does not exist, it is added.
+
+## Environment variables
+
+| Variable | Description | Default value |
+| -------- | ----------- | ------------- |
+| PORT     | DNS server port | 53 |
+| WEBPORT  | Web server port | 5000 |
+| TTL      | TTL for records | 300 |
+| ZONE_FILE | Path to initial zone file | `/zones/zones.txt` |
+| INTERNAL_ZONE_FILE | Path to initial internal zone file | `/zones/internal_zones.txt` |
+
