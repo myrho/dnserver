@@ -12,4 +12,5 @@ ADD ./dnserver.py /home/root/dnserver.py
 ADD ./dnslib /home/root/dnslib
 EXPOSE 53/tcp
 EXPOSE 53/udp
+EXPOSE 5000
 CMD ["/home/root/dnserver.py"]

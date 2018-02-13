@@ -10,16 +10,16 @@ see [example_zones.txt](example_zones.txt) for the format.
 
 You can also specify internal records which are only served if the value of one record in `zones.txt` matches the client's IP address. See [example_internal_zones.txt](example_internal_zones.txt) for an example.
 
+Records can be updated via the built-in Web server.
+
 To use with docker:
 
     docker build -t dnsserer .
-    docker run -p 5053:53/udp -p 5053:53/tcp --rm dnserver
-
-(See [dnserver on hub.docker.com](https://hub.docker.com/r/samuelcolvin/dnserver/))
+    docker run -p 5053:53/udp -p 5053:53/tcp -p 5000:5000 --rm dnserver
 
 Or with custom zone files
 
-    docker run -p 5053:53/udp -v `pwd`/zones.txt:/zones/zones.txt -v `pwd`/internal_zones.txt:/zones/internal_zones.txt --rm dnserver
+    docker run -p 5053:53/udp -p 5053:53/tcp -p 5000:5000 -v `pwd`/zones.txt:/zones/zones.txt -v `pwd`/internal_zones.txt:/zones/internal_zones.txt --rm dnserver
 
 (assuming you have your zone records at `./zones.txt` and internal zone records at `./internal_zones.txt`, 
 TCP isn't required to use `dig`, hence why it's omitted in this case.)
@@ -57,3 +57,10 @@ example.com.		300	IN	A	192.168.123.123
 
 ```
 
+Update records by `POST`ing to the Web server's port (here 5000) using this scheme: `<address:port>/<domain>/<external ip>/[internal ip]`. For example:
+
+    curl -X POST localhost:5000/example.com/1.2.3.4/192.168.1.2
+
+Or just update the external ip:
+
+    curl -X POST localhost:5000/example.com/1.2.3.4
