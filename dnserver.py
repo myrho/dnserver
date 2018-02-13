@@ -44,7 +44,7 @@ TYPE_LOOKUP = {
 
 
 class Record:
-    def __init__(self, rname, rtype, args):
+    def __init__(self, rname, rtype, args, ttl=300):
         self._rname = DNSLabel(rname)
 
         rd_cls, self._rtype = TYPE_LOOKUP[rtype]
@@ -59,8 +59,6 @@ class Record:
 
         if self._rtype in (QTYPE.NS, QTYPE.SOA):
             ttl = 3600 * 24
-        else:
-            ttl = 300
 
         self.rr = RR(
             rname=self._rname,
@@ -88,7 +86,8 @@ class Record:
 
 
 class Resolver(BaseResolver):
-    def __init__(self, zone_file, internal_zone_file):
+    def __init__(self, zone_file, internal_zone_file, ttl):
+        self.ttl = ttl
         self.records = self.load_zones(zone_file)
         self.internal_records = self.load_zones(internal_zone_file)
 
@@ -117,7 +116,7 @@ class Resolver(BaseResolver):
                     args = tuple(json.loads(args_))
                 else:
                     args = (args_,)
-                record = Record(rname, rtype, args)
+                record = Record(rname, rtype, args, self.ttl)
                 zones.append(record)
                 logger.info(' %2d: %s', len(zones), record)
             except Exception as e:
@@ -168,7 +167,7 @@ class Resolver(BaseResolver):
                 record.set_ip(ip)
                 return True
         logger.debug("adding %s %s", domain, ip)
-        records.append(Record(domain, "A", (ip,)))
+        records.append(Record(domain, "A", (ip,), self.ttl))
         return True
 
 
@@ -217,9 +216,10 @@ if __name__ == '__main__':
 
     port = int(os.getenv('PORT', 53))
     webPort = int(os.getenv('WEBPORT', 5000))
+    ttl = int(os.getenv('TTL', 300))
     zone_file = Path(os.getenv('ZONE_FILE', '/zones/zones.txt'))
     internal_zone_file = Path(os.getenv('INTERNAL_ZONE_FILE', '/zones/internal_zones.txt'))
-    resolver = Resolver(zone_file, internal_zone_file)
+    resolver = Resolver(zone_file, internal_zone_file, ttl)
     udp_server = DNSServer(resolver, port=port)
     tcp_server = DNSServer(resolver, port=port, tcp=True)
 
