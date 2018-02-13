@@ -167,8 +167,9 @@ class Resolver(BaseResolver):
                 logger.debug('updating %s', record._rname)
                 record.set_ip(ip)
                 return True
-        logger.info('%s not found', domain)
-        return False
+        logger.debug("adding %s %s", domain, ip)
+        records.append(Record(domain, "A", (ip,)))
+        return True
 
 
 
@@ -208,6 +209,7 @@ class WebServer(BaseHTTPRequestHandler):
             self.output(200, "OK")
         else:
             self.output(404, "%s not found" % domain)
+
 
 
 if __name__ == '__main__':
