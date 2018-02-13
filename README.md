@@ -75,7 +75,7 @@ If the record does not exist, it is added.
 | -------- | ----------- | ------------- |
 | PORT     | DNS server port | 53 |
 | WEBPORT  | Web server port | 5000 |
-| TTL      | TTL for records | 300 |
+| TTL      | TTL for records | 60 |
 | ZONE_FILE | Path to initial zone file | `/zones/zones.txt` |
 | INTERNAL_ZONE_FILE | Path to initial internal zone file | `/zones/internal_zones.txt` |
 

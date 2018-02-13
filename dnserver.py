@@ -216,7 +216,7 @@ if __name__ == '__main__':
 
     port = int(os.getenv('PORT', 53))
     webPort = int(os.getenv('WEBPORT', 5000))
-    ttl = int(os.getenv('TTL', 300))
+    ttl = int(os.getenv('TTL', 60))
     zone_file = Path(os.getenv('ZONE_FILE', '/zones/zones.txt'))
     internal_zone_file = Path(os.getenv('INTERNAL_ZONE_FILE', '/zones/internal_zones.txt'))
     resolver = Resolver(zone_file, internal_zone_file, ttl)
